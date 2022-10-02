@@ -125,7 +125,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6e617b4166a77dd499cf4b4b1c783ab3, type: 3}
   m_Name: LowRes
   m_EditorClassIdentifier: 
-  active: 1
+  active: 0
   on:
     m_OverrideState: 1
     m_Value: 1
