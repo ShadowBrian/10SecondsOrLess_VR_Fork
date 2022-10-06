@@ -48,8 +48,8 @@ public class CharacterMovement : MonoBehaviour
 
     float fallingTime;
     float lastVerticalVelocity;
-    float lastJumpTime; 
-    bool usedDoubleJump = false; 
+    float lastJumpTime;
+    bool usedDoubleJump = false;
 
     class Cmd
     {
@@ -57,7 +57,7 @@ public class CharacterMovement : MonoBehaviour
         public float rightmove;
         public float upmove;
     }
-     
+
     Cmd cmd;
 
     void Start()
@@ -75,6 +75,14 @@ public class CharacterMovement : MonoBehaviour
         audioSource = GetComponent<AudioSource>();
     }
 
+    private void LateUpdate()
+    {
+
+        /*Vector3 newPos = Vector3.zero;
+        newPos.y = playerCameraYOffset;
+        playerCamera.parent.localPosition = newPos;*/
+    }
+
     void Update()
     {
         if (Cursor.lockState != CursorLockMode.Locked)
@@ -83,11 +91,11 @@ public class CharacterMovement : MonoBehaviour
         }
 
         if (lastVerticalVelocity > 0 && playerVelocity.y < 0)
-            fallingTime = Time.time; 
+            fallingTime = Time.time;
 
         lastVerticalVelocity = playerVelocity.y;
 
-         if (!controller.isGrounded) 
+        if (!controller.isGrounded)
         {
             AirMove();
             grounded = false;
@@ -100,9 +108,9 @@ public class CharacterMovement : MonoBehaviour
 
         controller.Move(playerVelocity * Time.deltaTime);
 
-        Vector3 newPos = Vector3.zero;
+        /*Vector3 newPos = Vector3.zero;
         newPos.y = playerCameraYOffset;
-        playerCamera.localPosition = newPos;
+        playerCamera.parent.localPosition = newPos;*/
 
         Quaternion camRot = playerCamera.localRotation;
 
@@ -122,7 +130,7 @@ public class CharacterMovement : MonoBehaviour
         }
 
         //Camera rotation
-        rotX -= GameManager.Instance.controlsManager.lookInput.y * xMouseSensitivity * 0.02f;
+        /*rotX -= GameManager.Instance.controlsManager.lookInput.y * xMouseSensitivity * 0.02f;
         rotY += GameManager.Instance.controlsManager.lookInput.x * yMouseSensitivity * 0.02f;
 
         // Clamp the X rotation
@@ -133,6 +141,17 @@ public class CharacterMovement : MonoBehaviour
 
         this.transform.rotation = Quaternion.Euler(0, rotY, 0); // Rotates the collider
         playerCamera.localRotation = Quaternion.Euler(rotX, 0, 0); // Rotates the camera 
+        */
+
+        if (UnityXRInputBridge.instance.GetButtonDown(XRButtonMasks.primary2DAxisLeft, XRHandSide.RightHand))
+        {
+            transform.Rotate(Vector3.up, -45f);
+        }
+
+        if (UnityXRInputBridge.instance.GetButtonDown(XRButtonMasks.primary2DAxisRight, XRHandSide.RightHand))
+        {
+            transform.Rotate(Vector3.up, 45f);
+        }
 
         /* Calculate top velocity */
         Vector3 udp = playerVelocity;
@@ -168,19 +187,19 @@ public class CharacterMovement : MonoBehaviour
         cmd.rightmove = GameManager.Instance.controlsManager.moveInput.x;
     }
 
-     
-    public void JumpInput(bool performed)   
+
+    public void JumpInput(bool performed)
     {
         //Debug.Log(Time.time + " : " +  lastJumpTime + " : " +  fallingTime + " : " + usedDoubleJump);
-        if (((playerVelocity.y > 0 && Time.time > lastJumpTime + 0.2f) ||  Time.time < fallingTime + 0.2f) && !usedDoubleJump)
+        if (((playerVelocity.y > 0 && Time.time > lastJumpTime + 0.2f) || Time.time < fallingTime + 0.2f) && !usedDoubleJump)
         {
-            wishJump = true; 
-            usedDoubleJump = true;  
+            wishJump = true;
+            usedDoubleJump = true;
             CheckForJump();
 
-            return; 
+            return;
         }
-        else if (playerVelocity.y > 0 ||  Time.time < fallingTime + 0.2f) 
+        else if (playerVelocity.y > 0 || Time.time < fallingTime + 0.2f)
             return;
 
 
@@ -200,7 +219,8 @@ public class CharacterMovement : MonoBehaviour
         SetMovementDir();
 
         wishDir = new Vector3(cmd.rightmove, 0, cmd.forwardmove);
-        wishDir = transform.TransformDirection(wishDir);
+        Quaternion flatVRHead = Quaternion.LookRotation(playerCamera.forward);
+        wishDir = flatVRHead * (wishDir);
 
         float wishSpeed = wishDir.magnitude;
         wishSpeed *= moveSpeed;
@@ -264,37 +284,37 @@ public class CharacterMovement : MonoBehaviour
         }
 
         playerVelocity.x *= speed;
-        playerVelocity.y = zSpeed; 
+        playerVelocity.y = zSpeed;
         playerVelocity.z *= speed;
 
 
     }
 
     void GroundMove()
-    { 
+    {
         bool crouching = false;
-        usedDoubleJump = false; 
+        usedDoubleJump = false;
 
-        if (GameManager.Instance.controlsManager.CrouchInputDown() && playerVelocity.y < 0.2f)
+        if (GameManager.Instance.controlsManager.CrouchInputDown())// && playerVelocity.y < 0.2f
         {
-            crouching = true; 
+            crouching = true;
         }
 
         if (crouching)
         {
             controller.height = 0f;
-            playerCameraYOffset = 0f;
-        } 
+            playerCameraYOffset = -10f;
+        }
         else
         {
             controller.height = 2f;
-            playerCameraYOffset = 1f; 
+            playerCameraYOffset = 0f;
         }
 
         Vector3 wishDir;
 
         if (!wishJump)
-            ApplyFriction(crouching ? 0.2f : 1.0f); 
+            ApplyFriction(crouching ? 0.2f : 1.0f);
         else
             ApplyFriction(0);
 
@@ -303,7 +323,8 @@ public class CharacterMovement : MonoBehaviour
             SetMovementDir();
 
             wishDir = new Vector3(cmd.rightmove, 0, cmd.forwardmove);
-            wishDir = transform.TransformDirection(wishDir);
+            Quaternion flatVRHead = Quaternion.LookRotation(playerCamera.forward);
+            wishDir = flatVRHead * (wishDir);
 
             wishDir.Normalize();
             moveDirectionNorm = wishDir;
@@ -317,10 +338,10 @@ public class CharacterMovement : MonoBehaviour
         }
 
         CheckForJump();
-    } 
+    }
 
-    public  void CheckForJump()
-    { 
+    public void CheckForJump()
+    {
         if (wishJump)
         {
             lastJumpTime = Time.time;
