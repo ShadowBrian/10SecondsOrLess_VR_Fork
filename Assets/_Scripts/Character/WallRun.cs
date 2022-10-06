@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using System.Linq; 
+using System.Linq;
 
 public class WallRun : MonoBehaviour
 {
@@ -21,8 +21,10 @@ public class WallRun : MonoBehaviour
 
     public bool useSprint;
 
-    PlayerController m_PlayerCharacterController; 
-     
+    public Transform VRHead;
+
+    PlayerController m_PlayerCharacterController;
+
     Vector3[] directions;
     RaycastHit[] hits;
 
@@ -43,7 +45,7 @@ public class WallRun : MonoBehaviour
     bool CanWallRun()
     {
         float verticalAxis = GameManager.Instance.controlsManager.moveInput.y;
-        bool isSprinting = true; 
+        bool isSprinting = true;
         isSprinting = !useSprint ? true : isSprinting;
 
         return !isPlayergrounded() && verticalAxis > 0 && VerticalCheck() && isSprinting;
@@ -71,9 +73,9 @@ public class WallRun : MonoBehaviour
 
     public void LateUpdate()
     {
-        isWallRunning = false; 
+        isWallRunning = false;
 
-        jumping = GameManager.Instance.controlsManager.JumpInputDown(); 
+        jumping = GameManager.Instance.controlsManager.JumpInputDown();
 
         if (CanAttach())
         {
@@ -81,7 +83,8 @@ public class WallRun : MonoBehaviour
 
             for (int i = 0; i < directions.Length; i++)
             {
-                Vector3 dir = transform.TransformDirection(directions[i]);
+                Quaternion flatHeadRotation = Quaternion.LookRotation(VRHead.forward);
+                Vector3 dir = flatHeadRotation * (directions[i]);
                 Physics.Raycast(transform.position, dir, out hits[i], wallMaxDistance);
                 if (hits[i].collider != null)
                 {
@@ -129,7 +132,7 @@ public class WallRun : MonoBehaviour
                 elapsedTimeSinceJump = 0;
                 jumping = false;
             }
-            return false; 
+            return false;
         }
 
         return true;
@@ -142,8 +145,9 @@ public class WallRun : MonoBehaviour
         {
             // Vector3 alongWall = Vector3.Cross(hit.normal, Vector3.up); 
             float vertical = GameManager.Instance.controlsManager.moveInput.y;
-            Vector3 alongWall = transform.TransformDirection(Vector3.forward); 
-             
+            Quaternion flatHeadRotation = Quaternion.LookRotation(VRHead.forward);
+            Vector3 alongWall = flatHeadRotation * (Vector3.forward);
+
             Debug.DrawRay(transform.position, alongWall.normalized * 10, Color.green);
             Debug.DrawRay(transform.position, lastWallNormal * 10, Color.magenta);
 
