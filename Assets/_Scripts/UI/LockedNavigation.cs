@@ -12,12 +12,12 @@ public class LockedNavigation : MonoBehaviour
     public bool xAxis;
 
     public void OnEnable()
-    { 
+    {
         controlsManager = GameManager.Instance.controlsManager;
 
-        OnControllerInput(controlsManager.currentScheme == "Gamepad"); 
+        OnControllerInput(true);
 
-        GameManager.Instance.controlsManager.lockedNavigation = this;  
+        GameManager.Instance.controlsManager.lockedNavigation = this;
     }
 
     public void OnDisable()
@@ -36,7 +36,7 @@ public class LockedNavigation : MonoBehaviour
         active = input;
     }
 
-    public void SelectButton() 
+    public void SelectButton()
     {
         if (gameObject.activeInHierarchy)
             buttons[currentSelected].OnClick();
@@ -44,12 +44,12 @@ public class LockedNavigation : MonoBehaviour
 
     float nextInput = 0f;
 
-    public void Input(Vector2 Vector2Input) 
+    public void Input(Vector2 Vector2Input)
     {
-        if (!gameObject.activeInHierarchy) 
-            return; 
-         
-        float input = xAxis ? Vector2Input.x : Vector2Input.y; 
+        if (!gameObject.activeInHierarchy)
+            return;
+
+        float input = xAxis ? Vector2Input.x : Vector2Input.y;
 
         if (Mathf.Abs(input) > 0f && Time.unscaledTime > nextInput)
         {
