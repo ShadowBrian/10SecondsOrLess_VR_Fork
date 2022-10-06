@@ -37,7 +37,7 @@ public class PlayerController : MonoBehaviour
     public bool isDead { get; private set; }
     public bool isCrouching { get; private set; }
     public float RotationMultiplier
-    { 
+    {
         get
         {
             return 1f;
@@ -54,14 +54,14 @@ public class PlayerController : MonoBehaviour
     float m_TargetCharacterHeight;
 
     const float k_JumpGroundingPreventionTime = 0.2f;
-    public float groundCheckDistanceInAir = 0.07f; 
+    public float groundCheckDistanceInAir = 0.07f;
 
     WallRun wallRunComponent;
 
     bool usedDoubleJump = false;
-     
+
     public AudioSource source;
-    public AudioClip jumpClip; 
+    public AudioClip jumpClip;
 
     void Start()
     {
@@ -104,13 +104,13 @@ public class PlayerController : MonoBehaviour
 
     void GroundCheck()
     {
-        float chosenGroundCheckDistance = isGrounded ? (m_Controller.skinWidth + groundCheckDistance) : groundCheckDistanceInAir; 
+        float chosenGroundCheckDistance = isGrounded ? (m_Controller.skinWidth + groundCheckDistance) : groundCheckDistanceInAir;
         isGrounded = false;
         m_GroundNormal = Vector3.up;
 
-        if (Time.time >= m_LastTimeJumped + k_JumpGroundingPreventionTime) 
+        if (Time.time >= m_LastTimeJumped + k_JumpGroundingPreventionTime)
         {
-            
+
             if (Physics.CapsuleCast(GetCapsuleBottomHemisphere(), GetCapsuleTopHemisphere(m_Controller.height), m_Controller.radius, Vector3.down, out RaycastHit hit, chosenGroundCheckDistance, groundCheckLayers, QueryTriggerInteraction.Ignore))
             {
                 m_GroundNormal = hit.normal;
@@ -119,7 +119,7 @@ public class PlayerController : MonoBehaviour
                     IsNormalUnderSlopeLimit(m_GroundNormal))
                 {
                     isGrounded = true;
-                    usedDoubleJump = false; 
+                    usedDoubleJump = false;
 
                     if (hit.distance > m_Controller.skinWidth)
                     {
@@ -137,36 +137,43 @@ public class PlayerController : MonoBehaviour
         float targetAngle = 0;
         if (dir != 0)
         {
-            targetAngle = Mathf.Sign(dir) * 5; 
+            targetAngle = Mathf.Sign(dir) * 5;
         }
         return Mathf.LerpAngle(cameraAngle, targetAngle, 5 * Time.deltaTime);
     }
 
     void HandleCharacterMovement()
     {
-        {
+        /*{
             transform.Rotate(new Vector3(0f, (GameManager.Instance.controlsManager.lookInput.x * rotationSpeed * RotationMultiplier), 0f), Space.Self);
-        }
+        }*/
 
         {
-            m_CameraVerticalAngle += -GameManager.Instance.controlsManager.lookInput.y * rotationSpeed * RotationMultiplier;
-            m_CameraVerticalAngle = Mathf.Clamp(m_CameraVerticalAngle, -89f, 89f);
-
-            if (wallRunComponent != null) 
+            if (wallRunComponent != null)
             {
                 if (wallRunComponent.IsWallRunning())
                 {
                     usedDoubleJump = false;
-                    playerCamera.transform.localEulerAngles = new Vector3(m_CameraVerticalAngle, 0, wallRunComponent.GetCameraRoll());
+                    playerCamera.transform.parent.localEulerAngles = new Vector3(0, 0, wallRunComponent.GetCameraRoll());
                 }
                 else
                 {
-                    playerCamera.transform.localEulerAngles = new Vector3(m_CameraVerticalAngle, 0, GetCameraRoll());
+                    playerCamera.transform.parent.localEulerAngles = new Vector3(0, 0, 0);
                 }
             }
             else
             {
-                playerCamera.transform.localEulerAngles = new Vector3(m_CameraVerticalAngle, 0, 0);
+                playerCamera.transform.parent.localEulerAngles = new Vector3(0, 0, 0);
+            }
+
+            if (UnityXRInputBridge.instance.GetButtonDown(XRButtonMasks.primary2DAxisLeft, XRHandSide.RightHand))
+            {
+                transform.Rotate(Vector3.up, -45f);
+            }
+
+            if (UnityXRInputBridge.instance.GetButtonDown(XRButtonMasks.primary2DAxisRight, XRHandSide.RightHand))
+            {
+                transform.Rotate(Vector3.up, 45f);
             }
         }
 
@@ -178,9 +185,9 @@ public class PlayerController : MonoBehaviour
             }
 
             float speedModifier = isSprinting ? sprintSpeedModifier : 1f;
-             
+
             Vector3 worldspaceMoveInput = transform.TransformVector(new Vector3(GameManager.Instance.controlsManager.moveInput.x, 0, GameManager.Instance.controlsManager.moveInput.y));
-              
+
             if (isGrounded || (wallRunComponent != null && wallRunComponent.IsWallRunning()))
             {
                 if (isGrounded)
@@ -230,11 +237,11 @@ public class PlayerController : MonoBehaviour
         if ((groundedOrDouble || (wallRunComponent != null && wallRunComponent.IsWallRunning())))
         {
             if (SetCrouchingState(false, false))
-            { 
+            {
                 if (!wallRunComponent.IsWallRunning() && groundedOrDouble)
-                { 
+                {
                     if (!isGrounded)
-                        usedDoubleJump = true; 
+                        usedDoubleJump = true;
 
                     characterVelocity = new Vector3(characterVelocity.x, 0f, characterVelocity.z);
                     characterVelocity += Vector3.up * jumpForce;
@@ -244,15 +251,15 @@ public class PlayerController : MonoBehaviour
                     source.PlayOneShot(jumpClip);
                     Debug.Log("PLAY JUMP");
                 }
-                else if(wallRunComponent.IsWallRunning()) 
+                else if (wallRunComponent.IsWallRunning())
                 {
                     usedDoubleJump = false;
                     characterVelocity = new Vector3(characterVelocity.x, 0f, characterVelocity.z);
                     characterVelocity += wallRunComponent.GetWallJumpDirection() * jumpForce;
 
                     if (Time.time > m_LastTimeJumped + 0.3f)
-                    { 
-                        source.volume = 0.5f; 
+                    {
+                        source.volume = 0.5f;
                         source.pitch = Random.Range(0.95f, 1.05f);
                         source.PlayOneShot(jumpClip);
                     }
@@ -264,16 +271,16 @@ public class PlayerController : MonoBehaviour
                 m_GroundNormal = Vector3.up;
             }
         }
-         
-        wallRunComponent.jumping = true; 
+
+        wallRunComponent.jumping = true;
     }
 
-    public bool CanDoubleJump() 
+    public bool CanDoubleJump()
     {
         if (!usedDoubleJump && !isGrounded && !wallRunComponent.IsWallRunning() && Time.time > m_LastTimeJumped + 0.3f)
             return true;
         else
-            return false;  
+            return false;
     }
 
     bool IsNormalUnderSlopeLimit(Vector3 normal)
@@ -303,7 +310,7 @@ public class PlayerController : MonoBehaviour
         {
             m_Controller.height = m_TargetCharacterHeight;
             m_Controller.center = Vector3.up * m_Controller.height * 0.5f;
-            playerCamera.transform.localPosition = Vector3.up * m_TargetCharacterHeight * cameraHeightRatio; 
+            playerCamera.transform.localPosition = Vector3.up * m_TargetCharacterHeight * cameraHeightRatio;
         }
         else if (m_Controller.height != m_TargetCharacterHeight)
         {
