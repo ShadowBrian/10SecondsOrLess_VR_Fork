@@ -6,14 +6,14 @@ using UnityEngine.InputSystem;
 
 public class ControlsManager : MonoBehaviour
 {
-    public static ControlsManager instance; 
+    public static ControlsManager instance;
 
     public Controls controls;
 
-	public Vector2 moveInput;
-	public Vector2 lookInput;
+    public Vector2 moveInput;
+    public Vector2 lookInput;
 
-    public LockedNavigation lockedNavigation; 
+    public LockedNavigation lockedNavigation;
 
     public InputDevice currentInputDevice { get; private set; }
     public string currentScheme { get; private set; }
@@ -21,10 +21,10 @@ public class ControlsManager : MonoBehaviour
     public bool IsGamepad => currentScheme.Equals("Gamepad");
 
 
-    public void Awake() 
+    public void Awake()
     {
         if (instance == null)
-            instance = this;  
+            instance = this;
         else
             Destroy(gameObject);
 
@@ -34,15 +34,15 @@ public class ControlsManager : MonoBehaviour
 
         controls = new Controls();
 
-        controls.Player.Jump.performed += JumpPerformed;
-        controls.Player.Fire.performed += FireGun;
-        controls.General.Restart.performed += Restart;
-        controls.General.LockedNavigationSelect.performed += LockedNavigationSelect;
+        //controls.Player.Jump.performed += JumpPerformed;
+        //controls.Player.Fire.performed += FireGun;
+        //controls.General.Restart.performed += Restart;
+        // controls.General.LockedNavigationSelect.performed += LockedNavigationSelect;
 
         currentScheme = "Keyboard";
         InputSystem.onActionChange += OnActionChange;
 
-        controls.Enable(); 
+        controls.Enable();
     }
 
     private void OnActionChange(object obj, InputActionChange change)
@@ -57,11 +57,11 @@ public class ControlsManager : MonoBehaviour
                 {
                     currentScheme = "Keyboard";
 
-                    if(lockedNavigation)
+                    if (lockedNavigation)
                         lockedNavigation.OnControllerInput(false);
 
-                } 
-                else 
+                }
+                else
                 {
                     currentScheme = "Gamepad";
 
@@ -72,74 +72,97 @@ public class ControlsManager : MonoBehaviour
         }
     }
 
-    private void Restart(InputAction.CallbackContext obj)
+    private void Restart()
     {
-        if (obj.performed)
-            GameManager.Instance.RestartLevel();
+        GameManager.Instance.RestartLevel();
     }
 
     public void Update()
-	{
+    {
+        /*if (GameManager.Instance && GameManager.Instance.timerStarted)
+            moveInput = controls.Player.Movement.ReadValue<Vector2>(); 
+        else
+            moveInput = Vector3.zero;*/
 
         if (GameManager.Instance && GameManager.Instance.timerStarted)
-            moveInput = controls.Player.Movement.ReadValue<Vector2>(); 
+            moveInput = UnityXRInputBridge.instance.GetVec2(XR2DAxisMasks.primary2DAxis, XRHandSide.LeftHand);
         else
             moveInput = Vector3.zero;
 
         if (ScreenFader.Instance && !ScreenFader.Instance.IsFading)
         {
-            if (!IsGamepad)
+            /*if (!IsGamepad)
             {
                 lookInput = controls.Player.Look.ReadValue<Vector2>() * 0.5f * 0.1f;
             }
             else
             {
                 lookInput = controls.Player.Look.ReadValue<Vector2>() * Time.deltaTime;
-            }
+            }*/
+
+            lookInput = UnityXRInputBridge.instance.GetVec2(XR2DAxisMasks.primary2DAxis, XRHandSide.RightHand);
         }
         else
         {
             lookInput = Vector3.zero;
         }
 
+        if (UnityXRInputBridge.instance.GetButtonDown(XRButtonMasks.primaryButton, XRHandSide.RightHand))
+        {
+            JumpPerformed();
+        }
+        if (UnityXRInputBridge.instance.GetButtonDown(XRButtonMasks.triggerButton, XRHandSide.RightHand))
+        {
+            FireGun();
+        }
+        if (UnityXRInputBridge.instance.GetButtonDown(XRButtonMasks.secondaryButton, XRHandSide.RightHand))
+        {
+            Restart();
+        }
+
+        if (UnityXRInputBridge.instance.GetButtonDown(XRButtonMasks.primaryButton, XRHandSide.LeftHand) || UnityXRInputBridge.instance.GetButtonDown(XRButtonMasks.triggerButton, XRHandSide.LeftHand))
+        {
+            LockedNavigationSelect();
+        }
+
         if (lockedNavigation && lockedNavigation.gameObject.activeInHierarchy)
-            lockedNavigation.Input(controls.General.LockedNavigationInput.ReadValue<Vector2>());
+            lockedNavigation.Input(UnityXRInputBridge.instance.GetVec2(XR2DAxisMasks.primary2DAxis, XRHandSide.LeftHand));
     }
 
 
-    private void LockedNavigationSelect(InputAction.CallbackContext obj)
+    private void LockedNavigationSelect()
     {
-        if (obj.performed && lockedNavigation != null)
-            lockedNavigation.SelectButton(); 
-    } 
+        if (lockedNavigation != null)
+            lockedNavigation.SelectButton();
+    }
 
-    public void JumpPerformed(InputAction.CallbackContext ctx)
-	{
-        if (ctx.performed && GameManager.Instance.timerStarted)
-        { 
+    public void JumpPerformed()
+    {
+        if (GameManager.Instance.timerStarted)
+        {
             GameManager.Instance.newPlayerController.Jump();
         }
-	}
+    }
 
-    public void FireGun(InputAction.CallbackContext ctx)
+    public void FireGun()
     {
-        if (ctx.performed && GameManager.Instance.timerStarted)
+        if (GameManager.Instance.timerStarted)
             GameManager.Instance.gun.Fire();
     }
 
     public bool CrouchInputDown()
     {
-        return  GameManager.Instance.timerStarted ? controls.Player.Crouch.ReadValue<float>() > 0.5f : false; 
+        return GameManager.Instance.timerStarted ? UnityXRInputBridge.instance.GetButton(XRButtonMasks.triggerButton, XRHandSide.LeftHand) : false;
     }
 
     public bool JumpInputDown()
-	{
-        return   GameManager.Instance.timerStarted ?  controls.Player.Jump.ReadValue<float>() > 0.5f : false;
-	}
+    {
+        return GameManager.Instance.timerStarted ? UnityXRInputBridge.instance.GetButton(XRButtonMasks.primaryButton, XRHandSide.RightHand) : false;
+    }
 
-	public bool FireInputDown()
-	{
-        return GameManager.Instance.timerStarted ? controls.Player.Fire.ReadValue<float>() > 0.5f : false;
-	}
+    public bool FireInputDown()
+    {
+        return GameManager.Instance.timerStarted ? UnityXRInputBridge.instance.GetButton(XRButtonMasks.triggerButton, XRHandSide.RightHand) : false;
+    }
 
 }
